@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUXUS 智眼驗收 (Web版)</title>
+    <style>
+        body { font-family: 'Microsoft JhengHei', sans-serif; background-color: #f4f4f9; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #2c3e50; margin: 0; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .btn { background-color: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; margin-top: 10px; }
+        .btn:hover { background-color: #0056b3; }
+        .result-box { text-align: center; display: none; margin-top: 20px; padding: 20px; border-radius: 10px; }
+        .pass { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .fail { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .image-preview { display: flex; justify-content: space-between; margin-top: 10px; }
+        .img-container { width: 48%; text-align: center; }
+        img { max-width: 100%; border-radius: 8px; border: 2px solid #ddd; }
+        input[type="file"] { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🎨 LUXUS 智眼驗收</h1>
+        <p>AI 色差比對系統 v1.0</p>
+    </div>
+
+    <div class="card">
+        <h3>1. 上傳樣板 (標準)</h3>
+        <input type="file" id="fileStd" accept="image/*" onchange="previewImage(this, 'previewStd')">
+        <div class="img-container"><img id="previewStd" src="" style="display:none"></div>
+    </div>
+
+    <div class="card">
+        <h3>2. 上傳完工照 (現況)</h3>
+        <input type="file" id="fileTgt" accept="image/*" onchange="previewImage(this, 'previewTgt')">
+        <div class="img-container"><img id="previewTgt" src="" style="display:none"></div>
+    </div>
+
+    <button class="btn" onclick="startAnalysis()">🚀 開始 AI 驗收運算</button>
+
+    <div id="resultArea" class="result-box">
+        <h2 id="resultTitle"></h2>
+        <p id="resultDesc"></p>
+        <p style="font-size: 12px; color: #666;">*已自動排除邊緣干擾，取樣中央區域</p>
+    </div>
+
+    <script>
+        // 圖片預覽功能
+        function previewImage(input, imgId) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = document.getElementById(imgId);
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // 核心分析功能
+        function startAnalysis() {
+            const imgStd = document.getElementById('previewStd');
+            const imgTgt = document.getElementById('previewTgt');
+
+            if (imgStd.style.display === 'none' || imgTgt.style.display === 'none') {
+                alert("請先上傳兩張照片！");
+                return;
+            }
+
+            // 模擬 AI 運算 (為了演示效果，這裡使用簡化的計算邏輯)
+            // 在真實產品中，這裡會是更複雜的 RGB 轉 Lab 算法
+            
+            // 獲取圖片顏色數據
+            const color1 = getAverageColor(imgStd);
+            const color2 = getAverageColor(imgTgt);
+            
+            // 計算差異
+            const diff = calculateColorDiff(color1, color2);
+            
+            // 顯示結果
+            const resultArea = document.getElementById('resultArea');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultDesc = document.getElementById('resultDesc');
+            
+            resultArea.style.display = 'block';
+            
+            // 設定標準：差異小於 15 (模擬 Delta E < 3.0)
+            if (diff < 15) {
+                resultArea.className = "result-box pass";
+                resultTitle.innerHTML = "✅ 驗收通過 (PASS)";
+                resultDesc.innerHTML = "經系統比對，色差值為 " + diff.toFixed(2) + "。符合合約標準，無明顯色差。";
+            } else {
+                resultArea.className = "result-box fail";
+                resultTitle.innerHTML = "❌ 驗收失敗 (FAIL)";
+                resultDesc.innerHTML = "經系統比對，色差值為 " + diff.toFixed(2) + "。已超過容許範圍，建議重做。";
+            }
+        }
+
+        // 取樣功能 (模擬智慧裁切，只取中間)
+        function getAverageColor(imgEl) {
+            var canvas = document.createElement('canvas');
+            var context = canvas.getContext('2d');
+            canvas.width = imgEl.naturalWidth;
+            canvas.height = imgEl.naturalHeight;
+            context.drawImage(imgEl, 0, 0);
+            
+            // 取中央 50% 區域
+            var startX = canvas.width * 0.25;
+            var startY = canvas.height * 0.25;
+            var w = canvas.width * 0.5;
+            var h = canvas.height * 0.5;
+            
+            var data = context.getImageData(startX, startY, w, h).data;
+            var r=0, g=0, b=0;
+            
+            for (var i = 0; i < data.length; i += 4) {
+                r += data[i];
+                g += data[i+1];
+                b += data[i+2];
+            }
+            
+            var count = data.length / 4;
+            return { r: r/count, g: g/count, b: b/count };
+        }
+
+        // 簡易色差計算
+        function calculateColorDiff(c1, c2) {
+            // 歐幾里得距離 (Euclidean Distance) 模擬色差
+            return Math.sqrt(
+                Math.pow(c1.r - c2.r, 2) +
+                Math.pow(c1.g - c2.g, 2) +
+                Math.pow(c1.b - c2.b, 2)
+            ) / 3; // 縮小數值以便閱讀
+        }
+    </script>
+</body>
+</html>
